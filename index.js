@@ -43,7 +43,7 @@ async function run() {
         })
 
         app.get('/assignmentsEmail', async (req, res) => {
-            console.log(req.query.email)
+            console.log(req.query.email);
             let query = {};
             if (req.query?.email) {
                 query = { email: req.query.email }
@@ -52,25 +52,56 @@ async function run() {
             res.send(result)
         })
 
-        app.get('/updateAssignment/:id', async(req, res) =>{
-            const id = req.params.id;
-            const query = {_id : new ObjectId(id)};
-            const result = await assignmentCollection.findOne(query);
-            res.send(result)  
+        app.get('/assignmentLevel', async(req, res) => {
+            console.log(req.query.difficultyLevel);
+            let query = {};
+            if(req.query?.difficultyLevel){
+                query =  {difficultyLevel: req.query.difficultyLevel}
+            }
+            const result = await assignmentCollection.find(query).toArray();
+            res.send(result)
+
         })
-        app.get('/singleAssignment/:id', async(req, res) => {
+
+        app.get('/updateAssignment/:id', async (req, res) => {
             const id = req.params.id;
-            const query = { _id : new ObjectId(id)};
+            const query = { _id: new ObjectId(id) };
             const result = await assignmentCollection.findOne(query);
             res.send(result)
         })
+        app.get('/singleAssignment/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await assignmentCollection.findOne(query);
+            res.send(result)
+        })
+        app.delete('/deleteAssignment/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await assignmentCollection.deleteOne(query);
+            res.send(result)
+        })
+        app.put('/updateAssignment/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
 
-        // app.get(`/update/:id`, async (req, res) => {
-        //     const id = req.params.id;
-        //     const query = { _id: new ObjectId(id) }
-        //     const result = await artCollection.findOne(query)
-        //     res.send(result)
-        // })
+            const options = { upsert: true };
+            const updateAssignment = req.body;
+            const assignment = {
+                $set: {
+                    assignmentName: updateAssignment.assignmentName,
+                    difficultyLevel: updateAssignment.difficultyLevel,
+                    assignmentTitle: updateAssignment.assignmentTitle,
+                    assignmentMark: updateAssignment.assignmentMark,
+                    photo_url: updateAssignment.photo_url,
+                    dueTime: updateAssignment.dueTime,
+                    description: updateAssignment.description
+                }
+            }
+            const result = await assignmentCollection.updateOne(filter, assignment, options);
+            res.send(result)
+
+        })
 
 
 
