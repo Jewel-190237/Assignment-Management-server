@@ -30,6 +30,7 @@ async function run() {
 
         const assignmentCollection = await client.db("group-study").collection('assignment')
         const takeAssignmentCollection = await client.db("group-study").collection('takeAssignment')
+        const myAssignmentCollection = await client.db("group-study").collection('myAssignments')
 
         app.post('/assignments', async (req, res) => {
             const newAssignment = req.body;
@@ -44,6 +45,19 @@ async function run() {
             const result = await takeAssignmentCollection.insertOne(newAssignment);
             res.send(result);
         })
+
+        app.post('/myAssignments', async(req, res) => {
+            const newAssignment = req.body;
+            const result = await myAssignmentCollection.insertOne(newAssignment);
+            res.send(result)
+        })
+
+        app.get('/myAssignments', async(req, res) => {
+            const result = await myAssignmentCollection.find().toArray();
+            res.send(result)
+        })
+
+
         app.get('/takeAssignmentsAll', async(req, res) => {
             const result = await takeAssignmentCollection.find().toArray();
             res.send(result);
@@ -52,6 +66,13 @@ async function run() {
             const result = await takeAssignmentCollection.find().toArray();
             res.send(result);
         })
+        app.get('/giveMark/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = { _id : new ObjectId(id)};
+            const result = await takeAssignmentCollection.findOne(query);
+            res.send(result);
+        })
+        
 
         app.get('/assignments', async (req, res) => {
             const result = await assignmentCollection.find().toArray();
