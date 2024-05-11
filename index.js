@@ -29,11 +29,27 @@ async function run() {
         // await client.db("admin").command({ ping: 1 });
 
         const assignmentCollection = await client.db("group-study").collection('assignment')
+        const takeAssignmentCollection = await client.db("group-study").collection('takeAssignment')
 
         app.post('/assignments', async (req, res) => {
             const newAssignment = req.body;
             console.log(newAssignment);
             const result = await assignmentCollection.insertOne(newAssignment);
+            res.send(result);
+        })
+
+        app.post('/takeAssignments', async (req, res) => {
+            const newAssignment = req.body;
+            console.log(newAssignment);
+            const result = await takeAssignmentCollection.insertOne(newAssignment);
+            res.send(result);
+        })
+        app.get('/takeAssignmentsAll', async(req, res) => {
+            const result = await takeAssignmentCollection.find().toArray();
+            res.send(result);
+        })
+        app.get('/pendingAssignments', async(req, res) => {
+            const result = await takeAssignmentCollection.find().toArray();
             res.send(result);
         })
 
