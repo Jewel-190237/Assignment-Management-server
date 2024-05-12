@@ -57,7 +57,6 @@ async function run() {
             res.send(result)
         })
 
-
         app.get('/takeAssignmentsAll', async(req, res) => {
             const result = await takeAssignmentCollection.find().toArray();
             res.send(result);
@@ -66,6 +65,14 @@ async function run() {
             const result = await takeAssignmentCollection.find().toArray();
             res.send(result);
         })
+
+        app.delete('/deletePendingAssignment/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id : new ObjectId(id)};
+            const result = await takeAssignmentCollection.deleteOne(query);
+            res.send(result)
+        })
+
         app.get('/giveMark/:id', async(req, res) => {
             const id = req.params.id;
             const query = { _id : new ObjectId(id)};
@@ -96,14 +103,14 @@ async function run() {
                 query =  {difficultyLevel: req.query.difficultyLevel}
             }
             const result = await assignmentCollection.find(query).toArray();
-            res.send(result)
+            res.send(result);
 
         })
 
         app.get('/updateAssignment/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
-            const result = await assignmentCollection.findOne(query);
+            const result = await myAssignmentCollection.findOne(query);
             res.send(result)
         })
         app.get('/singleAssignment/:id', async (req, res) => {
@@ -116,7 +123,7 @@ async function run() {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
             const result = await assignmentCollection.deleteOne(query);
-            res.send(result)
+            res.send(result);
         })
         app.put('/updateAssignment/:id', async (req, res) => {
             const id = req.params.id;
