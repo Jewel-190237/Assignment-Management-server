@@ -1,13 +1,21 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000;
 
 
-app.use(cors({ origin: "*" }));
+app.use(cors({
+    origin: [
+        'http://localhost:5173'
+    ],
+    credentials:true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 
 
@@ -20,6 +28,30 @@ const client = new MongoClient(uri, {
         deprecationErrors: true,
     }
 });
+
+const logger = (req, res, next) => {
+    console.log('Log: Info', req.method, req.url);
+    next();
+}
+
+const verifyToken = (req, res, next) => {
+    const token = req?.cookies?.token;
+    console.log('token in middleWire',token);
+
+    if(!token){
+        return res.status(401).send({message: 'Unauthorize access'})
+    }
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+        if(err){
+            return res.status(401).send({message: 'Unauthorize access'})
+        }
+        req.user = decoded;
+        next();
+    })
+    
+    // next();
+}
 
 async function run() {
     try {
@@ -52,15 +84,29 @@ async function run() {
             res.send(result)
         })
 
+        app.post('/jwt', async(req, res) => {
+            const user = req.body;
+            console.log('user for token',user);
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
+            res.cookie('token', token, {
+                httpOnly:true,
+                secure:true,
+                sameSite: 'none'
+            })
+            .send({success: true});
+        })
+
+        app.post('/logout', async(req, res) => {
+            const user = req.body;
+            console.log('Logout user ', user);
+            res.clearCookie('token', {maxAge: 0}).send({success: true});
+        })
+
         app.get('/myAssignments', async(req, res) => {
             const result = await myAssignmentCollection.find().toArray();
             res.send(result)
         })
 
-        app.get('/takeAssignmentsAll', async(req, res) => {
-            const result = await takeAssignmentCollection.find().toArray();
-            res.send(result);
-        })
         app.get('/pendingAssignments', async(req, res) => {
             const result = await takeAssignmentCollection.find().toArray();
             res.send(result);
@@ -86,18 +132,33 @@ async function run() {
             res.send(result);
         })
 
-        app.get('/assignmentsEmail', async (req, res) => {
+        app.get('/allAssignment', async(req, res) => {
+            const result = await assignmentCollection.find().toArray();
+            res.send(result);
+        })
+        app.delete('/deleteAssFromAssPage/:id', async(req, res) => {
+            const id = req.params.id;
+            const query = {_id : new ObjectId(id)};
+            const result = await assignmentCollection.deleteOne(query);
+            res.send(result);
+        })
+
+        app.get('/takeAssignmentsAll', async (req, res) => {
             console.log(req.query.email);
             let query = {};
             if (req.query?.email) {
                 query = { email: req.query.email }
             }
-            const result = await assignmentCollection.find(query).toArray();
+            const result = await myAssignmentCollection.find(query).toArray();
             res.send(result)
         })
 
-        app.get('/assignmentLevel', async(req, res) => {
+        app.get('/assignmentLevel', logger, verifyToken, async(req, res) => {
             console.log(req.query.difficultyLevel);
+            console.log('token owner info',req.user);
+            // if(req.user.email !== req.query.email){
+            //     return res.status(403).send({message: 'access forbidden'})
+            // }
             let query = {};
             if(req.query?.difficultyLevel){
                 query =  {difficultyLevel: req.query.difficultyLevel}
@@ -110,7 +171,7 @@ async function run() {
         app.get('/updateAssignment/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
-            const result = await myAssignmentCollection.findOne(query);
+            const result = await assignmentCollection.findOne(query);
             res.send(result)
         })
         app.get('/singleAssignment/:id', async (req, res) => {
@@ -122,7 +183,7 @@ async function run() {
         app.delete('/deleteAssignment/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
-            const result = await assignmentCollection.deleteOne(query);
+            const result = await myAssignmentCollection.deleteOne(query);
             res.send(result);
         })
         app.put('/updateAssignment/:id', async (req, res) => {
@@ -143,8 +204,7 @@ async function run() {
                 }
             }
             const result = await assignmentCollection.updateOne(filter, assignment, options);
-            res.send(result)
-
+            res.send(result);
         })
 
 
